@@ -1,0 +1,76 @@
+# Codemagic — verification, not publication.
+#
+# Swift Package Manager resolves straight from Git tags, so releasing this SDK
+# is `git tag` and nothing else: no registry, no account, no upload. CI is here
+# for the thing that is genuinely hard without it — proving the package still
+# compiles for iOS before a tag goes out and merchants resolve it.
+#
+# That matters more than usual here: this package is developed on Windows,
+# where there is no Swift compiler and no Xcode. Without a macOS runner, the
+# first person to find out it does not build is a merchant.
+
+workflows:
+  verify-ios:
+    name: Build PaymentSDK for iOS
+    instance_type: mac_mini_m2
+    max_build_duration: 20
+
+    environment:
+      xcode: latest
+
+    triggering:
+      events:
+        - push
+        - tag
+        - pull_request
+
+    scripts:
+      - name: Show toolchain
+        script: |
+          swift --version
+          xcodebuild -version
+
+      # `swift build` is the obvious command and the wrong one. On a macOS
+      # runner it targets macOS, and PaymentViewController imports UIKit, so it
+      # fails with "no such module 'UIKit'" — a toolchain mismatch that reads
+      # like a broken package. Always name an iOS destination.
+      - name: Build for iOS device
+        script: |
+          xcodebuild build \
+            -scheme PaymentSDK \
+            -destination 'generic/platform=iOS' \
+            -skipPackagePluginValidation
+
+      # Device and simulator are different slices. A package can build for
+      # arm64 device and still fail for the arm64 simulator, so both run.
+      - name: Build for iOS Simulator
+        script: |
+          xcodebuild build \
+            -scheme PaymentSDK \
+            -destination 'generic/platform=iOS Simulator' \
+            -skipPackagePluginValidation
+
+      # The package exposes a public API that merchants compile against, so a
+      # symbol disappearing is a breaking change. This records what is public
+      # at each build; diff two builds to see whether a release is MINOR or
+      # MAJOR rather than guessing.
+      - name: Record the public API surface
+        script: |
+          mkdir -p artifacts
+          grep -rhn 'public ' Sources/PaymentSDK \
+            | sed 's/^[0-9]*://' \
+            | sed 's/^[[:space:]]*//' \
+            | sort -u > artifacts/public-api.txt
+          cat artifacts/public-api.txt
+
+    artifacts:
+      - artifacts/public-api.txt
+
+    publishing:
+      email:
+        recipients:
+          # Replace with whoever should hear about a red build.
+          - tarifibasel0@gmail.com
+        notify:
+          success: false   # a green build on every push is noise
+          failure: true
