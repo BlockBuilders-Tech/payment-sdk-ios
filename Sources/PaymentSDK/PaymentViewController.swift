@@ -272,7 +272,14 @@ public final class PaymentViewController: UIViewController {
             callbacks.onPending?(result)
         }
 
-        let deliver = { [callbacks] in callbacks.onFinish?(result) }
+        // Annotated and multi-line, both deliberately. `onFinish?(result)` is
+        // optional chaining, so it evaluates to Void? — and as the single
+        // expression of a closure that made the whole thing infer as
+        // `() -> Void?`, which `dismiss(completion:)` will not take. A
+        // statement body returns Void and the optional result is discarded.
+        let deliver: () -> Void = { [callbacks] in
+            callbacks.onFinish?(result)
+        }
 
         if let presenting = presentingViewController {
             presenting.dismiss(animated: true, completion: deliver)
