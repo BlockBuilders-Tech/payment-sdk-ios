@@ -5,11 +5,16 @@ public struct PaymentConfig {
 
     /// Where the hosted checkout lives, when the caller does not say.
     ///
-    /// Production. A merchant testing against another environment passes
-    /// `serverURL:` instead — they cannot edit this file. Swift Package
-    /// Manager checks the package out read-only into DerivedData and discards
-    /// local changes on the next resolve, so "edit the constant" is advice
-    /// nobody consuming this package can follow.
+    /// **This is the test gateway, not production.** Matching the Android SDK
+    /// and the web widget, which both point at portaltest too — the whole
+    /// platform is still on test. A merchant who does not pass `serverURL:`
+    /// transacts against test, which is intended for now and is the one line
+    /// to change when production opens.
+    ///
+    /// Pass `serverURL:` to point somewhere else. Do not look for a constant
+    /// to edit: Swift Package Manager checks this package out read-only into
+    /// DerivedData and discards local changes on the next resolve, so editing
+    /// the source is advice nobody consuming this package can follow.
     public static let defaultServerURL = "https://portaltest.qredit.tech/plugin/"
 
     public let ereference: String
