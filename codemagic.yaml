@@ -66,11 +66,17 @@ workflows:
     artifacts:
       - artifacts/public-api.txt
 
-    publishing:
-      email:
-        recipients:
-          # Replace with whoever should hear about a red build.
-          - tarifibasel0@gmail.com
-        notify:
-          success: false   # a green build on every push is noise
-          failure: true
+    # Notifications are configured in the Codemagic UI, not here.
+    #
+    # A plaintext address in a public repo gets scraped, and this repo's own
+    # commits use a @users.noreply.github.com identity precisely to avoid
+    # that. Set recipients under the app's Notifications settings instead, or
+    # put a team alias here — never a personal inbox.
+    #
+    # publishing:
+    #   email:
+    #     recipients:
+    #       - dev@blockbuilders.ps
+    #     notify:
+    #       success: false   # a green build on every push is noise
+    #       failure: true

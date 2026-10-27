@@ -10,7 +10,7 @@ public struct PaymentConfig {
     /// Manager checks the package out read-only into DerivedData and discards
     /// local changes on the next resolve, so "edit the constant" is advice
     /// nobody consuming this package can follow.
-    public static let defaultServerURL = "https://pay.blockbuilders.ps/plugin/"
+    public static let defaultServerURL = "https://portaltest.qredit.tech/plugin/"
 
     public let ereference: String
     public let token: String

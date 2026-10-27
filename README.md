@@ -58,7 +58,7 @@ iOS is much simpler than Android here: **Swift Package Manager resolves straight
 from Git tags.** There is no registry, no account, no signing, no upload, and
 no propagation delay. Merchants need no tokens.
 
-1. Push this folder to a repo, e.g. `github.com/YOUR_USER/payment-sdk-ios`
+1. The repo is `github.com/BlockBuilders-Tech/payment-sdk-ios`
    (`Package.swift` must be at the repo root).
 2. Tag it:
    ```bash
@@ -71,7 +71,7 @@ That's the whole release. Merchants add it in Xcode via
 `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/YOUR_USER/payment-sdk-ios.git", from: "1.0.0")
+.package(url: "https://github.com/BlockBuilders-Tech/payment-sdk-ios.git", from: "1.0.0")
 ```
 
 A **private** repo works identically — merchants just need read access to it;
