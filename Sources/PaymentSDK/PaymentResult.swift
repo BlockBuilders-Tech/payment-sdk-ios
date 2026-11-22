@@ -123,7 +123,16 @@ public struct PaymentResult {
 
         var extras: [String: String] = [:]
         for (key, value) in dict where !mappedKeys.contains(key) && !(value is NSNull) {
-            if let nested = try? JSONSerialization.data(withJSONObject: value),
+            // isValidJSONObject first, and it is not optional.
+            // `data(withJSONObject:)` RAISES NSInvalidArgumentException for
+            // anything that is not an array or dictionary at the top level,
+            // and `try?` catches Swift errors only: an Objective-C exception
+            // goes straight past it and aborts the host app. Any unmapped
+            // string or number did that — the gateway's `source` marker for
+            // one, which is why pressing Finish on the success screen killed
+            // the app. Scalars now take the plain-string branch below.
+            if JSONSerialization.isValidJSONObject(value),
+               let nested = try? JSONSerialization.data(withJSONObject: value),
                let text = String(data: nested, encoding: .utf8) {
                 extras[key] = text          // nested objects/arrays as raw JSON
             } else {

@@ -9,6 +9,11 @@ public final class PaymentViewController: UIViewController {
 
     private static let channelName = "PaymentChannel"
 
+    /// The marker the gateway puts on everything it posts
+    /// (`MerchantPaymentCallback.sourceId`). Part of the gateway's public
+    /// contract — it does not change.
+    private static let gatewaySource = "qredit-payment-gateway"
+
     /// Listens on BOTH transports the gateway may use:
     ///
     ///  1. `payment-result` CustomEvent — the SDK/WebView path.
@@ -41,13 +46,18 @@ public final class PaymentViewController: UIViewController {
         window.PaymentChannel = { postMessage: post };
       }
 
-      function forward(raw) {
+      function forward(raw, requireSource) {
         if (!raw) return;
         var d = raw;
         if (typeof d === 'string') {
           try { d = JSON.parse(d); } catch (e) { return; }
         }
         if (!d || typeof d.status !== 'string') return;
+
+        // `message` is a shared channel: CyberSource's card form posts its own
+        // events on it, some with a `status` of their own. Only the gateway's
+        // carry its marker, so anything without it is not a payment result.
+        if (requireSource && d.source !== '\(gatewaySource)') return;
 
         var s = JSON.stringify(d);
         if (s === lastPayload) return;   // de-dupe both transports
@@ -56,11 +66,11 @@ public final class PaymentViewController: UIViewController {
       }
 
       window.addEventListener('payment-result', function(e) {
-        forward(e.detail);
+        forward(e.detail, false);   // ours alone: nothing else dispatches it
       });
 
       window.addEventListener('message', function(e) {
-        forward(e.data);
+        forward(e.data, true);
       });
     })();
     """
@@ -155,6 +165,13 @@ public final class PaymentViewController: UIViewController {
 
         webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = self
+
+        // The gateway is a fixed, full-height page that scrolls inside itself,
+        // so the web view's own scroll view has nothing to scroll. Left to
+        // bounce, a drag that reaches the end of the card form rubber-bands
+        // the whole checkout instead of stopping.
+        webView.scrollView.bounces = false
+
         webView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(webView)
 
@@ -412,6 +429,10 @@ private final class WeakScriptMessageHandler: NSObject, WKScriptMessageHandler {
         _ userContentController: WKUserContentController,
         didReceive message: WKScriptMessage
     ) {
+        // The bridge script runs in every frame, CyberSource's included. A
+        // payment result only ever comes from the gateway itself, which is the
+        // main frame — nothing an embedded frame posts may end the session.
+        guard message.frameInfo.isMainFrame else { return }
         delegate?.handleBridgeMessage(message.body)
     }
 }
